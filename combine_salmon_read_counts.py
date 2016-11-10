@@ -14,7 +14,7 @@ if __name__ == "__main__":
     transcript_counts = defaultdict(dict)
     samples = list()
 
-    with open(args.input, 'r') as inputs:
+    with open(args.inputs, 'r') as inputs:
         for line in inputs:
             temp = line.split()
             sample = temp[0]
@@ -25,9 +25,9 @@ if __name__ == "__main__":
                 reader = csv.reader(salmonfh, dialect='excel-tab')
                 header = reader.next()
                 for row in reader:
-                    transcript_counts[row[0]][sample] = int(row[4])
+                    transcript_counts[row[0]][sample] = int(float(row[4]))
 
-    with open(args.output, 'w') as outfile:
+    with open(args.outfile, 'w') as outfile:
         outfile.write("Transcript")
         for sample in samples:
             outfile.write("\t{}".format(sample))

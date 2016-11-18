@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import csv
 import sys
 import math
@@ -61,10 +63,22 @@ if __name__ == "__main__":
             expression[row['Transcript']]['Treated_TE']['11'] = math.log((float(row['11_PT']) / float(row['11_TT'])), 2)
             expression[row['Transcript']]['Treated_TE']['20'] = math.log((float(row['20_PT']) / float(row['20_TT'])), 2)
 
+            expression[row['Transcript']]['Raw_Control_TE']['11'] = float(row['11_PD']) / float(row['11_TD'])
+            expression[row['Transcript']]['Raw_Control_TE']['20'] = float(row['20_PD']) / float(row['20_TD'])
+            expression[row['Transcript']]['Raw_Treated_TE']['11'] = float(row['11_PT']) / float(row['11_TT'])
+            expression[row['Transcript']]['Raw_Treated_TE']['20'] = float(row['20_PT']) / float(row['20_TT'])
+
             expression[row['Transcript']]['Delta_TE']['11'] = expression[row['Transcript']]['Treated_TE']['11'] - \
                                                               expression[row['Transcript']]['Control_TE']['11']
             expression[row['Transcript']]['Delta_TE']['20'] = expression[row['Transcript']]['Treated_TE']['20'] - \
                                                               expression[row['Transcript']]['Control_TE']['20']
+
+            expression[row['Transcript']]['TE_FC']['11'] = \
+                math.log(expression[row['Transcript']]['Raw_Treated_TE']['11'] /
+                         expression[row['Transcript']]['Raw_Control_TE']['11'], 2)
+            expression[row['Transcript']]['TE_FC']['20'] = \
+                math.log(expression[row['Transcript']]['Raw_Treated_TE']['20'] /
+                         expression[row['Transcript']]['Raw_Control_TE']['20'], 2)
 
             expression_vectors['11_PD'].append(row['11_PD'])
             expression_vectors['11_PT'].append(row['11_PT'])
@@ -83,17 +97,24 @@ if __name__ == "__main__":
     # Output TE Data
     sys.stdout.write("Outputting TE Data\n")
     with open("{}_TE_Data.txt".format(args.outroot), 'w') as te_outfile:
-        te_outfile.write("Transcript\t11_Control_Log2TE\t20_Control_Log2TE\t11_Treated_Log2TE\t20_Treated_Log2TE\t"
-                         "11_Delta_Log2TE\t20_Delta_Log2TE\n")
+        te_outfile.write("Transcript\t11_Control_Raw_TE\t20_Control_Raw_TE\t11_Treated_Raw_TE\t20_Treated_Raw_TE\t"
+                         "11_Control_Log2TE\t20_Control_Log2TE\t11_Treated_Log2TE\t20_Treated_Log2TE\t"
+                         "11_Delta_Log2TE\t20_Delta_Log2TE\t11_FC_Log2TE\t20_FC_Log2TE\n")
         for transcript in expression.keys():
-            te_outfile.write("{}\t{}\t{}\t{}\t{}\t{}\t{}"
+            te_outfile.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
                              "\n".format(transcript,
+                                         expression[transcript]['Raw_Control_TE']['11'],
+                                         expression[transcript]['Raw_Control_TE']['20'],
+                                         expression[transcript]['Raw_Treated_TE']['11'],
+                                         expression[transcript]['Raw_Treated_TE']['20'],
                                          expression[transcript]['Control_TE']['11'],
                                          expression[transcript]['Control_TE']['20'],
                                          expression[transcript]['Treated_TE']['11'],
                                          expression[transcript]['Treated_TE']['20'],
-                                         expression[row['Transcript']]['Delta_TE']['11'],
-                                         expression[row['Transcript']]['Delta_TE']['20']
+                                         expression[transcript]['Delta_TE']['11'],
+                                         expression[transcript]['Delta_TE']['20'],
+                                         expression[transcript]['TE_FC']['11'],
+                                         expression[transcript]['TE_FC']['20']
                                          ))
 
     sys.stdout.write("Calculate correlation coeffients\n")

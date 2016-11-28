@@ -8,17 +8,9 @@ import argparse
 import scipy.stats
 import plotly.plotly as py
 import plotly.graph_objs as go
+import statsmodels.api as sm
 
-from math import erf
-from math import sqrt
 from collections import defaultdict
-
-
-def z_to_p(z):
-    left_p = 0.5 * (1 + erf(z / sqrt(2)))
-    p = 2 * (1 - left_p)
-
-    return p
 
 
 if __name__ == "__main__":
@@ -133,7 +125,26 @@ if __name__ == "__main__":
     zscore_20 = scipy.stats.zscore(expression_vectors['20_TE_FC'])
     zscore_avg = scipy.stats.zscore(expression_vectors['Avg_TE_FC'])
 
-    num_tests = len(expression_vectors['11_TE_FC'])
+    # Calculate P-Values and Adjusted P_Values
+    p_11 = list()
+    for zscore in zscore_11:
+        p_11.append(scipy.stats.norm.sf(abs(zscore)) * 2)
+    p_11_adj_results = sm.stats.multipletests(p_11, method='b')
+    p_11_adj = p_11_adj_results[1]
+
+    p_20 = list()
+    for zscore in zscore_20:
+        p_20.append(scipy.stats.norm.sf(abs(zscore)) * 2)
+    p_20_adj_results = sm.stats.multipletests(p_20, method='b')
+    p_20_adj = p_20_adj_results[1]
+
+    p_avg = list()
+    for zscore in zscore_avg:
+        p_avg.append(scipy.stats.norm.sf(abs(zscore)) * 2)
+    p_avg_adj_results = sm.stats.multipletests(p_avg, method='b')
+    p_avg_adj = p_avg_adj_results[1]
+
+    num_tests = len(expression_vectors['Avg_TE_FC'])
 
     # Output TE Data
     sys.stdout.write("Outputting TE Data for {} transcripts\n".format(num_tests))
@@ -147,15 +158,6 @@ if __name__ == "__main__":
                          "Avg_FC_ZScore\tAvg_PValue\tAvg_Adj_PValue\n")
         i = 0
         for transcript in expression.keys():
-            p_11 = scipy.stats.norm.sf(abs(zscore_11[i])) * 2
-            p_11_adj = p_11 * num_tests
-
-            p_20 = scipy.stats.norm.sf(abs(zscore_20[i])) * 2
-            p_20_adj = p_20 * num_tests
-
-            p_avg = scipy.stats.norm.sf(abs(zscore_avg[i])) * 2
-            p_avg_adj = p_avg * num_tests
-
             te_outfile.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
                              "\t{}\t{}\t{}\t{}\t{}\t{}"
                              "\n".format(transcript, transcript2gene[transcript],
@@ -175,14 +177,14 @@ if __name__ == "__main__":
                                          expression[transcript]['TE_FC']['20'],
                                          expression[transcript]['TE_FC']['Avg'],
                                          zscore_11[i],
-                                         p_11,
-                                         p_11_adj,
+                                         p_11[i],
+                                         p_11_adj[i],
                                          zscore_20[i],
-                                         p_20,
-                                         p_20_adj,
+                                         p_20[i],
+                                         p_20_adj[i],
                                          zscore_avg[i],
-                                         p_avg,
-                                         p_avg_adj
+                                         p_avg[i],
+                                         p_avg_adj[i]
                                          ))
             i += 1
 

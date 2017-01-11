@@ -18,6 +18,7 @@ if __name__ == "__main__":
 
     with open(args.inputs, 'r') as inputs:
         for line in inputs:
+            print line
             temp = line.split()
             sample = temp[0]
             infile = temp[1]

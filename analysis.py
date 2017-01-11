@@ -23,7 +23,12 @@ if __name__ == "__main__":
 
     expression = defaultdict(lambda: defaultdict(dict))
     transcript2gene = dict()
+
     expression_vectors = defaultdict(list)
+
+    transcript_labels = list()
+    human_transcript_labels = list()
+    kshv_transcript_labels = list()
 
     sys.stdout.write("Reading input data from {} and calculating TE Values\n".format(args.input))
     with open(args.input, 'r') as infile:
@@ -62,6 +67,8 @@ if __name__ == "__main__":
             else:
                 transcript = row['Transcript']
                 transcript2gene[transcript] = transcript
+
+            transcript_labels.append(transcript)
 
             expression[transcript]['PD']['11'] = row['11_PD']
             expression[transcript]['PD']['20'] = row['20_PD']
@@ -119,6 +126,20 @@ if __name__ == "__main__":
             expression_vectors['11_TE_FC'].append(expression[transcript]['TE_FC']['11'])
             expression_vectors['20_TE_FC'].append(expression[transcript]['TE_FC']['20'])
             expression_vectors['Avg_TE_FC'].append(expression[transcript]['TE_FC']['Avg'])
+
+            # Set up Human versus KSHV expression vectors
+            if transcript.startswith("trans"):
+                kshv_transcript_labels.append(transcript)
+                expression_vectors['kshv_11_TE_FC'].append(expression[transcript]['TE_FC']['11'])
+                expression_vectors['kshv_20_TE_FC'].append(expression[transcript]['TE_FC']['20'])
+                expression_vectors['kshv_Avg_TE_FC'].append(expression[transcript]['TE_FC']['Avg'])
+            elif transcript.startswith("ENST"):
+                human_transcript_labels.append(transcript)
+                expression_vectors["human_11_TE_FC"].append(expression[transcript]['TE_FC']['11'])
+                expression_vectors["human_20_TE_FC"].append(expression[transcript]['TE_FC']['20'])
+                expression_vectors["human_Avg_TE_FC"].append(expression[transcript]['TE_FC']['Avg'])
+            else:
+                sys.stderr.write("Could not determine organism for transcript {}\n".format(transcript))
 
     # Calculating Z-Scores
     zscore_11 = scipy.stats.zscore(expression_vectors['11_TE_FC'])
@@ -188,146 +209,246 @@ if __name__ == "__main__":
                                          ))
             i += 1
 
-    # sys.stdout.write("Calculate correlation coeffients\n")
-    #
-    # # Calculate the Spearman's Correlation Coefficient between samples
-    # pd_rho, pd_pvalue = scipy.stats.spearmanr(expression_vectors['11_PD'], expression_vectors['20_PD'])
-    # pt_rho, pt_pvalue = scipy.stats.spearmanr(expression_vectors['11_PT'], expression_vectors['20_PT'])
-    # td_rho, td_pvalue = scipy.stats.spearmanr(expression_vectors['11_TD'], expression_vectors['20_TD'])
-    # tt_rho, tt_pvalue = scipy.stats.spearmanr(expression_vectors['11_TT'], expression_vectors['20_TT'])
-    #
-    # control_te_rho, control_te_pvalue = scipy.stats.spearmanr(expression_vectors['11_control_te'],
-    #                                                           expression_vectors['20_control_te'])
-    # treated_te_rho, treated_te_pvalue = scipy.stats.spearmanr(expression_vectors['11_treated_te'],
-    #                                                           expression_vectors['20_treated_te'])
-    #
-    # rho_11, pvalue_11 = scipy.stats.spearmanr(expression_vectors['11_PD'], expression_vectors['11_TE_FC'])
-    # rho_20, pvalue_20 = scipy.stats.spearmanr(expression_vectors['20_PD'], expression_vectors['20_TE_FC'])
-    #
-    # sys.stdout.write("Plotting\n")
-    #
-    # fc_abundance_11_trace = go.Scatter(
-    #     x=expression_vectors['11_PD'],
-    #     y=expression_vectors['11_TE_FC'],
-    #     mode='markers'
-    # )
-    #
-    # fc_abundance_20_trace = go.Scatter(
-    #     x=expression_vectors['20_PD'],
-    #     y=expression_vectors['20_TE_FC'],
-    #     mode='markers'
-    # )
-    #
-    # pd_trace = go.Scatter(
-    #     x=expression_vectors['11_PD'],
-    #     y=expression_vectors['20_PD'],
-    #     mode='markers'
-    # )
-    #
-    # pt_trace = go.Scatter(
-    #     x=expression_vectors['11_PT'],
-    #     y=expression_vectors['20_PT'],
-    #     mode='markers'
-    # )
-    #
-    # td_trace = go.Scatter(
-    #     x=expression_vectors['11_TD'],
-    #     y=expression_vectors['20_TD'],
-    #     mode='markers'
-    # )
-    #
-    # tt_trace = go.Scatter(
-    #     x=expression_vectors['11_TT'],
-    #     y=expression_vectors['20_TT'],
-    #     mode='markers'
-    # )
-    #
-    # control_te_trace = go.Scatter(
-    #     x=expression_vectors['11_control_te'],
-    #     y=expression_vectors['20_control_te'],
-    #     mode='markers'
-    # )
-    #
-    # treated_te_trace = go.Scatter(
-    #     x=expression_vectors['11_treated_te'],
-    #     y=expression_vectors['20_treated_te'],
-    #     mode='markers'
-    # )
-    #
-    # pd_data = [pd_trace]
-    # pt_data = [pt_trace]
-    # td_data = [td_trace]
-    # tt_data = [tt_trace]
-    #
-    # control_te_data = [control_te_trace]
-    # treated_te_data = [treated_te_trace]
-    #
-    # fc_abundance_11_data = [fc_abundance_11_trace]
-    # fc_abundance_20_data = [fc_abundance_20_trace]
-    #
-    # fc_abundance_11_layout = dict(title="11_PD Abundance vs 11_TE_FC Spearman's Correlation: {}, P-value: "
-    #                                     "{}".format(rho_11, pvalue_11),
-    #                               yaxis=dict(zeroline=False),
-    #                               xaxis=dict(zeroline=False)
-    #                               )
-    #
-    # fc_abundance_20_layout = dict(title="20_PD Abundance vs 20_TE_FC Spearman's Correlation: {}, P-value: "
-    #                                     "{}".format(rho_20, pvalue_20),
-    #                               yaxis=dict(zeroline=False),
-    #                               xaxis=dict(zeroline=False)
-    #                               )
-    #
-    # pd_layout = dict(title="11_PD vs 20_PD Spearman's Correlation: {}, P-value: {}".format(pd_rho, pd_pvalue),
-    #                  yaxis=dict(zeroline=False),
-    #                  xaxis=dict(zeroline=False)
-    #                  )
-    #
-    # pt_layout = dict(title="11_PT vs 20_PT Spearman's Correlation: {}, P-value: {}".format(pt_rho, pt_pvalue),
-    #                  yaxis=dict(zeroline=False),
-    #                  xaxis=dict(zeroline=False)
-    #                  )
-    # td_layout = dict(title="11_TD vs 20_TD Spearman's Correlation: {}, P-value: {}".format(td_rho, td_pvalue),
-    #                  yaxis=dict(zeroline=False),
-    #                  xaxis=dict(zeroline=False)
-    #                  )
-    #
-    # tt_layout = dict(title="11_TT vs 20_TT Spearman's Correlation: {}, P-value: {}".format(tt_rho, tt_pvalue),
-    #                  yaxis=dict(zeroline=False),
-    #                  xaxis=dict(zeroline=False)
-    #                  )
-    #
-    # control_te_layout = dict(title="11_ControlTE vs 20_ControlTE Spearman's "
-    #                                "Correlation: {}, P-value: {}".format(control_te_rho, control_te_pvalue),
-    #                          yaxis=dict(zeroline=False),
-    #                          xaxis=dict(zeroline=False)
-    #                          )
-    #
-    # treated_te_layout = dict(title="11_TreatedTE vs 20_TreatedTE Spearman's "
-    #                                "Correlation: {}, P-value: {}".format(treated_te_rho, treated_te_pvalue),
-    #                          yaxis=dict(zeroline=False),
-    #                          xaxis=dict(zeroline=False)
-    #                          )
-    #
-    # pd_fig = dict(data=pd_data, layout=pd_layout)
-    # plotly.offline.plot(pd_fig, filename="{}_PD_correlation_plots".format(args.outroot))
-    #
-    # pt_fig = dict(data=pt_data, layout=pt_layout)
-    # plotly.offline.plot(pt_fig, filename="{}_PT_correlation_plots".format(args.outroot))
-    #
-    # td_fig = dict(data=td_data, layout=td_layout)
-    # plotly.offline.plot(td_fig, filename="{}_TD_correlation_plots".format(args.outroot))
-    #
-    # tt_fig = dict(data=tt_data, layout=tt_layout)
-    # plotly.offline.plot(tt_fig, filename="{}_TT_correlation_plots".format(args.outroot))
-    #
-    # control_te_fig = dict(data=control_te_data, layout=control_te_layout)
-    # plotly.offline.plot(control_te_fig, filename="{}_Control_TE_correlation_plots".format(args.outroot))
-    #
-    # treated_te_fig = dict(data=treated_te_data, layout=treated_te_layout)
-    # plotly.offline.plot(treated_te_fig, filename="{}_Treated_TE_correlation_plots".format(args.outroot))
-    #
-    # fc_fig_11 = dict(data=fc_abundance_11_data, layout=fc_abundance_11_layout)
-    # plotly.offline.plot(fc_fig_11, filename="{}_11_TE_FC_Abundance_Correlation".format(args.outroot))
-    #
-    # fc_fig_20 = dict(data=fc_abundance_20_data, layout=fc_abundance_20_layout)
-    # plotly.offline.plot(fc_fig_20, filename="{}_20_TE_FC_Abundance_Correlation".format(args.outroot))
+    sys.stdout.write("Calculate correlation coeffients\n")
+
+    # Calculate the Spearman's Correlation Coefficient between samples
+    pd_rho, pd_pvalue = scipy.stats.spearmanr(expression_vectors['11_PD'], expression_vectors['20_PD'])
+    pt_rho, pt_pvalue = scipy.stats.spearmanr(expression_vectors['11_PT'], expression_vectors['20_PT'])
+    td_rho, td_pvalue = scipy.stats.spearmanr(expression_vectors['11_TD'], expression_vectors['20_TD'])
+    tt_rho, tt_pvalue = scipy.stats.spearmanr(expression_vectors['11_TT'], expression_vectors['20_TT'])
+
+    control_te_rho, control_te_pvalue = scipy.stats.spearmanr(expression_vectors['11_control_te'],
+                                                              expression_vectors['20_control_te'])
+    treated_te_rho, treated_te_pvalue = scipy.stats.spearmanr(expression_vectors['11_treated_te'],
+                                                              expression_vectors['20_treated_te'])
+
+    rho_11, pvalue_11 = scipy.stats.spearmanr(expression_vectors['11_PD'], expression_vectors['11_TE_FC'])
+    rho_20, pvalue_20 = scipy.stats.spearmanr(expression_vectors['20_PD'], expression_vectors['20_TE_FC'])
+
+    sys.stdout.write("Plotting\n")
+
+    fc_abundance_11_trace = go.Scatter(
+        x=expression_vectors['11_TD'],
+        y=expression_vectors['11_TE_FC'],
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    fc_abundance_20_trace = go.Scatter(
+        x=expression_vectors['20_TD'],
+        y=expression_vectors['20_TE_FC'],
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    pd_trace = go.Scatter(
+        x=expression_vectors['11_PD'],
+        y=expression_vectors['20_PD'],
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    pt_trace = go.Scatter(
+        x=expression_vectors['11_PT'],
+        y=expression_vectors['20_PT'],
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    td_trace = go.Scatter(
+        x=expression_vectors['11_TD'],
+        y=expression_vectors['20_TD'],
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    tt_trace = go.Scatter(
+        x=expression_vectors['11_TT'],
+        y=expression_vectors['20_TT'],
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    control_te_trace = go.Scatter(
+        x=expression_vectors['11_control_te'],
+        y=expression_vectors['20_control_te'],
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    treated_te_trace = go.Scatter(
+        x=expression_vectors['11_treated_te'],
+        y=expression_vectors['20_treated_te'],
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    human_11_TE_hist_trace = go.Histogram(
+        x=expression_vectors['human_11_TE_FC'],
+        histnorm='probability'
+    )
+
+    human_20_TE_hist_trace = go.Histogram(
+        x=expression_vectors['human_20_TE_FC'],
+        histnorm='probability'
+    )
+
+    human_Avg_TE_hist_trace = go.Histogram(
+        x=expression_vectors['human_Avg_TE_FC'],
+        histnorm='probability'
+    )
+
+    kshv_11_TE_hist_trace = go.Histogram(
+        x=expression_vectors['kshv_11_TE_FC'],
+        histnorm='probability'
+    )
+
+    kshv_20_TE_hist_trace = go.Histogram(
+        x=expression_vectors['kshv_20_TE_FC'],
+        histnorm='probability'
+    )
+
+    kshv_Avg_TE_hist_trace = go.Histogram(
+        x=expression_vectors['kshv_Avg_TE_FC'],
+        histnorm='probability'
+    )
+
+    pd_data = [pd_trace]
+    pt_data = [pt_trace]
+    td_data = [td_trace]
+    tt_data = [tt_trace]
+
+    control_te_data = [control_te_trace]
+    treated_te_data = [treated_te_trace]
+
+    fc_abundance_11_data = [fc_abundance_11_trace]
+    fc_abundance_20_data = [fc_abundance_20_trace]
+
+    human_11_TE_hist_data = [human_11_TE_hist_trace]
+    human_20_TE_hist_data = [human_20_TE_hist_trace]
+    human_Avg_TE_hist_data = [human_Avg_TE_hist_trace]
+
+    kshv_11_TE_hist_data = [kshv_11_TE_hist_trace]
+    kshv_20_TE_hist_data = [kshv_20_TE_hist_trace]
+    kshv_Avg_TE_hist_data = [kshv_Avg_TE_hist_trace]
+
+    human_11_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample 11 from {} human transcripts"
+                                         "".format(len(expression_vectors['human_11_TE_FC'])),
+                                   yaxis=dict(zeroline=False),
+                                   xaxis=dict(zeroline=False)
+                                   )
+
+    human_20_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample 20 from {} human transcripts"
+                                         "".format(len(expression_vectors['human_20_TE_FC'])),
+                                   yaxis=dict(zeroline=False),
+                                   xaxis=dict(zeroline=False)
+                                   )
+
+    human_Avg_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample Average from {} human "
+                                          "transcripts".format(len(expression_vectors['human_Avg_TE_FC'])),
+                                    yaxis=dict(zeroline=False),
+                                    xaxis=dict(zeroline=False)
+                                    )
+
+    kshv_11_TE_hist_layout = dict(title="Frequency of TE VFold Change alues in Sample 11 from {} KSHV transcripts"
+                                        "".format(len(expression_vectors['kshv_11_TE_FC'])),
+                                  yaxis=dict(zeroline=False),
+                                  xaxis=dict(zeroline=False)
+                                  )
+
+    kshv_20_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample 20 from {} KSHV transcripts"
+                                        "".format(len(expression_vectors['kshv_20_TE_FC'])),
+                                  yaxis=dict(zeroline=False),
+                                  xaxis=dict(zeroline=False)
+                                  )
+
+    kshv_Avg_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample Average from {} KSHV transcripts"
+                                         "".format(len(expression_vectors['kshv_Avg_TE_FC'])),
+                                   yaxis=dict(zeroline=False),
+                                   xaxis=dict(zeroline=False)
+                                   )
+
+    fc_abundance_11_layout = dict(title="11_TD Abundance vs 11_TE_FC Spearman's Correlation: {}, P-value: "
+                                        "{}".format(rho_11, pvalue_11),
+                                  yaxis=dict(zeroline=False),
+                                  xaxis=dict(zeroline=False)
+                                  )
+
+    fc_abundance_20_layout = dict(title="20_TD Abundance vs 20_TE_FC Spearman's Correlation: {}, P-value: "
+                                        "{}".format(rho_20, pvalue_20),
+                                  yaxis=dict(zeroline=False),
+                                  xaxis=dict(zeroline=False)
+                                  )
+
+    pd_layout = dict(title="11_PD vs 20_PD Spearman's Correlation: {}, P-value: {}".format(pd_rho, pd_pvalue),
+                     yaxis=dict(zeroline=False),
+                     xaxis=dict(zeroline=False)
+                     )
+
+    pt_layout = dict(title="11_PT vs 20_PT Spearman's Correlation: {}, P-value: {}".format(pt_rho, pt_pvalue),
+                     yaxis=dict(zeroline=False),
+                     xaxis=dict(zeroline=False)
+                     )
+    td_layout = dict(title="11_TD vs 20_TD Spearman's Correlation: {}, P-value: {}".format(td_rho, td_pvalue),
+                     yaxis=dict(zeroline=False),
+                     xaxis=dict(zeroline=False)
+                     )
+
+    tt_layout = dict(title="11_TT vs 20_TT Spearman's Correlation: {}, P-value: {}".format(tt_rho, tt_pvalue),
+                     yaxis=dict(zeroline=False),
+                     xaxis=dict(zeroline=False)
+                     )
+
+    control_te_layout = dict(title="11_ControlTE vs 20_ControlTE Spearman's "
+                                   "Correlation: {}, P-value: {}".format(control_te_rho, control_te_pvalue),
+                             yaxis=dict(zeroline=False),
+                             xaxis=dict(zeroline=False)
+                             )
+
+    treated_te_layout = dict(title="11_TreatedTE vs 20_TreatedTE Spearman's "
+                                   "Correlation: {}, P-value: {}".format(treated_te_rho, treated_te_pvalue),
+                             yaxis=dict(zeroline=False),
+                             xaxis=dict(zeroline=False)
+                             )
+
+    pd_fig = dict(data=pd_data, layout=pd_layout)
+    plotly.offline.plot(pd_fig, filename="{}_PD_correlation_plots".format(args.outroot))
+
+    pt_fig = dict(data=pt_data, layout=pt_layout)
+    plotly.offline.plot(pt_fig, filename="{}_PT_correlation_plots".format(args.outroot))
+
+    td_fig = dict(data=td_data, layout=td_layout)
+    plotly.offline.plot(td_fig, filename="{}_TD_correlation_plots".format(args.outroot))
+
+    tt_fig = dict(data=tt_data, layout=tt_layout)
+    plotly.offline.plot(tt_fig, filename="{}_TT_correlation_plots".format(args.outroot))
+
+    control_te_fig = dict(data=control_te_data, layout=control_te_layout)
+    plotly.offline.plot(control_te_fig, filename="{}_Control_TE_correlation_plots".format(args.outroot))
+
+    treated_te_fig = dict(data=treated_te_data, layout=treated_te_layout)
+    plotly.offline.plot(treated_te_fig, filename="{}_Treated_TE_correlation_plots".format(args.outroot))
+
+    fc_fig_11 = dict(data=fc_abundance_11_data, layout=fc_abundance_11_layout)
+    plotly.offline.plot(fc_fig_11, filename="{}_11_TE_FC_Abundance_Correlation".format(args.outroot))
+
+    fc_fig_20 = dict(data=fc_abundance_20_data, layout=fc_abundance_20_layout)
+    plotly.offline.plot(fc_fig_20, filename="{}_20_TE_FC_Abundance_Correlation".format(args.outroot))
+
+    human_te_hist_fig_11 = dict(data=human_11_TE_hist_data, layout=human_11_TE_hist_layout)
+    plotly.offline.plot(human_te_hist_fig_11, filename="{}_human_11_TE_hist".format(args.outroot))
+
+    human_te_hist_fig_20 = dict(data=human_20_TE_hist_data, layout=human_20_TE_hist_layout)
+    plotly.offline.plot(human_te_hist_fig_20, filename="{}_human_20_TE_hist".format(args.outroot))
+
+    human_te_hist_fig_Avg = dict(data=human_Avg_TE_hist_data, layout=human_Avg_TE_hist_layout)
+    plotly.offline.plot(human_te_hist_fig_Avg, filename="{}_human_Avg_TE_hist".format(args.outroot))
+
+    kshv_te_hist_fig_11 = dict(data=kshv_11_TE_hist_data, layout=kshv_11_TE_hist_layout)
+    plotly.offline.plot(kshv_te_hist_fig_11, filename="{}_kshv_11_TE_hist".format(args.outroot))
+
+    kshv_te_hist_fig_20 = dict(data=kshv_20_TE_hist_data, layout=kshv_20_TE_hist_layout)
+    plotly.offline.plot(kshv_te_hist_fig_20, filename="{}_kshv_20_TE_hist".format(args.outroot))
+
+    kshv_te_hist_fig_Avg = dict(data=kshv_Avg_TE_hist_data, layout=kshv_Avg_TE_hist_layout)
+    plotly.offline.plot(kshv_te_hist_fig_Avg, filename="{}_kshv_Avg_TE_hist".format(args.outroot))

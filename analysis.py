@@ -35,7 +35,7 @@ if __name__ == "__main__":
         reader = csv.DictReader(infile, dialect='excel-tab')
         for row in reader:
 
-            # Filter out any entry with less than 10 in any sample
+            # Filter out any entry with less than threshold in any sample
             flag = 0
             if float(row['11_PD']) < args.threshold:
                 flag = 1
@@ -57,7 +57,6 @@ if __name__ == "__main__":
                 flag = 0
 
             if flag == 1:
-                # sys.stderr.write("Found count less than 10 or transcript {}. Skipping...\n".format(row['Transcript']))
                 continue
 
             if row['Transcript'].startswith("ENST"):
@@ -109,6 +108,75 @@ if __name__ == "__main__":
             expression[transcript]['TE_FC']['Avg'] = (expression[transcript]['TE_FC']['11'] +
                                                       expression[transcript]['TE_FC']['20']) / 2
 
+            # Set up Human versus KSHV expression vectors
+            if transcript.startswith("trans"):
+                kshv_transcript_labels.append(transcript)
+                expression_vectors['kshv_11_TE_FC'].append(expression[transcript]['TE_FC']['11'])
+                expression_vectors['kshv_20_TE_FC'].append(expression[transcript]['TE_FC']['20'])
+                expression_vectors['kshv_Avg_TE_FC'].append(expression[transcript]['TE_FC']['Avg'])
+
+                expression_vectors['kshv_log_11_PD'].append(math.log(float(row['11_PD']), 2))
+                expression_vectors['kshv_log_11_PT'].append(math.log(float(row['11_PT']), 2))
+                expression_vectors['kshv_log_11_TD'].append(math.log(float(row['11_TD']), 2))
+                expression_vectors['kshv_log_11_TT'].append(math.log(float(row['11_TT']), 2))
+                expression_vectors['kshv_log_20_PD'].append(math.log(float(row['20_PD']), 2))
+                expression_vectors['kshv_log_20_PT'].append(math.log(float(row['20_PT']), 2))
+                expression_vectors['kshv_log_20_TD'].append(math.log(float(row['20_TD']), 2))
+                expression_vectors['kshv_log_20_TT'].append(math.log(float(row['20_TT']), 2))
+
+                expression_vectors['kshv_11_PD'].append(row['11_PD'])
+                expression_vectors['kshv_11_PT'].append(row['11_PT'])
+                expression_vectors['kshv_11_TD'].append(row['11_TD'])
+                expression_vectors['kshv_11_TT'].append(row['11_TT'])
+                expression_vectors['kshv_20_PD'].append(row['20_PD'])
+                expression_vectors['kshv_20_PT'].append(row['20_PT'])
+                expression_vectors['kshv_20_TD'].append(row['20_TD'])
+                expression_vectors['kshv_20_TT'].append(row['20_TT'])
+
+                expression_vectors['kshv_11_control_te'].append(expression[transcript]['Control_TE']['11'])
+                expression_vectors['kshv_20_control_te'].append(expression[transcript]['Control_TE']['20'])
+                expression_vectors['kshv_11_treated_te'].append(expression[transcript]['Treated_TE']['11'])
+                expression_vectors['kshv_20_treated_te'].append(expression[transcript]['Treated_TE']['20'])
+
+                expression_vectors['kshv_11_TE_FC'].append(expression[transcript]['TE_FC']['11'])
+                expression_vectors['kshv_20_TE_FC'].append(expression[transcript]['TE_FC']['20'])
+                expression_vectors['kshv_Avg_TE_FC'].append(expression[transcript]['TE_FC']['Avg'])
+            elif transcript.startswith("ENST"):
+                human_transcript_labels.append(transcript)
+                expression_vectors["human_11_TE_FC"].append(expression[transcript]['TE_FC']['11'])
+                expression_vectors["human_20_TE_FC"].append(expression[transcript]['TE_FC']['20'])
+                expression_vectors["human_Avg_TE_FC"].append(expression[transcript]['TE_FC']['Avg'])
+
+                expression_vectors['human_log_11_PD'].append(math.log(float(row['11_PD']), 2))
+                expression_vectors['human_log_11_PT'].append(math.log(float(row['11_PT']), 2))
+                expression_vectors['human_log_11_TD'].append(math.log(float(row['11_TD']), 2))
+                expression_vectors['human_log_11_TT'].append(math.log(float(row['11_TT']), 2))
+                expression_vectors['human_log_20_PD'].append(math.log(float(row['20_PD']), 2))
+                expression_vectors['human_log_20_PT'].append(math.log(float(row['20_PT']), 2))
+                expression_vectors['human_log_20_TD'].append(math.log(float(row['20_TD']), 2))
+                expression_vectors['human_log_20_TT'].append(math.log(float(row['20_TT']), 2))
+
+                expression_vectors['human_11_PD'].append(row['11_PD'])
+                expression_vectors['human_11_PT'].append(row['11_PT'])
+                expression_vectors['human_11_TD'].append(row['11_TD'])
+                expression_vectors['human_11_TT'].append(row['11_TT'])
+                expression_vectors['human_20_PD'].append(row['20_PD'])
+                expression_vectors['human_20_PT'].append(row['20_PT'])
+                expression_vectors['human_20_TD'].append(row['20_TD'])
+                expression_vectors['human_20_TT'].append(row['20_TT'])
+
+                expression_vectors['human_11_control_te'].append(expression[transcript]['Control_TE']['11'])
+                expression_vectors['human_20_control_te'].append(expression[transcript]['Control_TE']['20'])
+                expression_vectors['human_11_treated_te'].append(expression[transcript]['Treated_TE']['11'])
+                expression_vectors['human_20_treated_te'].append(expression[transcript]['Treated_TE']['20'])
+
+                expression_vectors['human_11_TE_FC'].append(expression[transcript]['TE_FC']['11'])
+                expression_vectors['human_20_TE_FC'].append(expression[transcript]['TE_FC']['20'])
+                expression_vectors['human_Avg_TE_FC'].append(expression[transcript]['TE_FC']['Avg'])
+            else:
+                sys.stderr.write("Could not determine organism for transcript {}\n".format(transcript))
+
+            # Combined expression vectors
             expression_vectors['log_11_PD'].append(math.log(float(row['11_PD']), 2))
             expression_vectors['log_11_PT'].append(math.log(float(row['11_PT']), 2))
             expression_vectors['log_11_TD'].append(math.log(float(row['11_TD']), 2))
@@ -135,20 +203,6 @@ if __name__ == "__main__":
             expression_vectors['11_TE_FC'].append(expression[transcript]['TE_FC']['11'])
             expression_vectors['20_TE_FC'].append(expression[transcript]['TE_FC']['20'])
             expression_vectors['Avg_TE_FC'].append(expression[transcript]['TE_FC']['Avg'])
-
-            # Set up Human versus KSHV expression vectors
-            if transcript.startswith("trans"):
-                kshv_transcript_labels.append(transcript)
-                expression_vectors['kshv_11_TE_FC'].append(expression[transcript]['TE_FC']['11'])
-                expression_vectors['kshv_20_TE_FC'].append(expression[transcript]['TE_FC']['20'])
-                expression_vectors['kshv_Avg_TE_FC'].append(expression[transcript]['TE_FC']['Avg'])
-            elif transcript.startswith("ENST"):
-                human_transcript_labels.append(transcript)
-                expression_vectors["human_11_TE_FC"].append(expression[transcript]['TE_FC']['11'])
-                expression_vectors["human_20_TE_FC"].append(expression[transcript]['TE_FC']['20'])
-                expression_vectors["human_Avg_TE_FC"].append(expression[transcript]['TE_FC']['Avg'])
-            else:
-                sys.stderr.write("Could not determine organism for transcript {}\n".format(transcript))
 
     # Calculating Z-Scores
     zscore_11 = scipy.stats.zscore(expression_vectors['11_TE_FC'])
@@ -255,16 +309,34 @@ if __name__ == "__main__":
     # Plots
     # Scatter
     # Fold Change vs Abundance
-    fc_abundance_11_trace = go.Scatter(
-        y=expression_vectors['log_11_TD'],
-        x=expression_vectors['11_TE_FC'],
+    fc_abundance_11_trace1 = go.Scatter(
+        y=expression_vectors['human_log_11_TD'],
+        x=expression_vectors['human_11_TE_FC'],
+        name='human',
         text=transcript_labels,
         mode='markers'
     )
 
-    fc_abundance_20_trace = go.Scatter(
-        y=expression_vectors['log_20_TD'],
-        x=expression_vectors['20_TE_FC'],
+    fc_abundance_11_trace2 = go.Scatter(
+        y=expression_vectors['kshv_log_11_TD'],
+        x=expression_vectors['kshv_11_TE_FC'],
+        name='kshv',
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    fc_abundance_20_trace1 = go.Scatter(
+        y=expression_vectors['human_log_20_TD'],
+        x=expression_vectors['human_20_TE_FC'],
+        name='human',
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    fc_abundance_20_trace2 = go.Scatter(
+        y=expression_vectors['kshv_log_20_TD'],
+        x=expression_vectors['kshv_20_TE_FC'],
+        name='kshv',
         text=transcript_labels,
         mode='markers'
     )
@@ -298,30 +370,66 @@ if __name__ == "__main__":
     #     mode='markers'
     # )
 
-    te_abundance_control_11_trace = go.Scatter(
-        x=expression_vectors['11_control_te'],
-        y=expression_vectors['log_11_TD'],
+    te_abundance_control_11_trace1 = go.Scatter(
+        x=expression_vectors['human_11_control_te'],
+        y=expression_vectors['human_log_11_TD'],
+        name='human',
         text=transcript_labels,
         mode='markers'
     )
 
-    te_abundance_treated_11_trace = go.Scatter(
-        x=expression_vectors['11_treated_te'],
-        y=expression_vectors['log_11_TT'],
+    te_abundance_treated_11_trace1 = go.Scatter(
+        x=expression_vectors['human_11_treated_te'],
+        y=expression_vectors['human_log_11_TT'],
+        name='human',
         text=transcript_labels,
         mode='markers'
     )
 
-    te_abundance_control_20_trace = go.Scatter(
-        x=expression_vectors['20_control_te'],
-        y=expression_vectors['log_20_TD'],
+    te_abundance_control_20_trace1 = go.Scatter(
+        x=expression_vectors['human_20_control_te'],
+        y=expression_vectors['human_log_20_TD'],
+        name='human',
         text=transcript_labels,
         mode='markers'
     )
 
-    te_abundance_treated_20_trace = go.Scatter(
-        x=expression_vectors['20_treated_te'],
-        y=expression_vectors['log_20_TT'],
+    te_abundance_treated_20_trace1 = go.Scatter(
+        x=expression_vectors['human_20_treated_te'],
+        y=expression_vectors['human_log_20_TT'],
+        name='human',
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    te_abundance_control_11_trace2 = go.Scatter(
+        x=expression_vectors['kshv_11_control_te'],
+        y=expression_vectors['kshv_log_11_TD'],
+        name='kshv',
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    te_abundance_treated_11_trace2 = go.Scatter(
+        x=expression_vectors['kshv_11_treated_te'],
+        y=expression_vectors['kshv_log_11_TT'],
+        name='kshv',
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    te_abundance_control_20_trace2 = go.Scatter(
+        x=expression_vectors['kshv_20_control_te'],
+        y=expression_vectors['kshv_log_20_TD'],
+        name='kshv',
+        text=transcript_labels,
+        mode='markers'
+    )
+
+    te_abundance_treated_20_trace2 = go.Scatter(
+        x=expression_vectors['kshv_20_treated_te'],
+        y=expression_vectors['kshv_log_20_TT'],
+        name='kshv',
         text=transcript_labels,
         mode='markers'
     )
@@ -371,21 +479,6 @@ if __name__ == "__main__":
         histnorm='probability'
     )
 
-    comb_11_TE_hist_trace = go.Histogram(
-        x=expression_vectors['11_TE_FC'],
-        histnorm='probability'
-    )
-
-    comb_20_TE_hist_trace = go.Histogram(
-        x=expression_vectors['20_TE_FC'],
-        histnorm='probability'
-    )
-
-    comb_Avg_TE_hist_trace = go.Histogram(
-        x=expression_vectors['Avg_TE_FC'],
-        histnorm='probability'
-    )
-
     # pd_data = [pd_trace]
     # pt_data = [pt_trace]
     # td_data = [td_trace]
@@ -394,25 +487,17 @@ if __name__ == "__main__":
     # control_te_data = [control_te_trace]
     # treated_te_data = [treated_te_trace]
 
-    fc_abundance_11_data = [fc_abundance_11_trace]
-    fc_abundance_20_data = [fc_abundance_20_trace]
+    fc_abundance_11_data = [fc_abundance_11_trace1, fc_abundance_11_trace2]
+    fc_abundance_20_data = [fc_abundance_20_trace1, fc_abundance_20_trace2]
 
-    human_11_TE_hist_data = [human_11_TE_hist_trace]
-    human_20_TE_hist_data = [human_20_TE_hist_trace]
-    human_Avg_TE_hist_data = [human_Avg_TE_hist_trace]
+    comb_11_TE_hist_data = [human_11_TE_hist_trace, kshv_11_TE_hist_trace]
+    comb_20_TE_hist_data = [human_20_TE_hist_trace, kshv_20_TE_hist_trace]
+    comb_Avg_TE_hist_data = [human_Avg_TE_hist_trace, kshv_Avg_TE_hist_trace]
 
-    kshv_11_TE_hist_data = [kshv_11_TE_hist_trace]
-    kshv_20_TE_hist_data = [kshv_20_TE_hist_trace]
-    kshv_Avg_TE_hist_data = [kshv_Avg_TE_hist_trace]
-
-    comb_11_TE_hist_data = [comb_11_TE_hist_trace]
-    comb_20_TE_hist_data = [comb_20_TE_hist_trace]
-    comb_Avg_TE_hist_data = [comb_Avg_TE_hist_trace]
-
-    te_abundance_control_11_data = [te_abundance_control_11_trace]
-    te_abundance_treated_11_data = [te_abundance_treated_11_trace]
-    te_abundance_control_20_data = [te_abundance_control_20_trace]
-    te_abundance_treated_20_data = [te_abundance_treated_20_trace]
+    te_abundance_control_11_data = [te_abundance_control_11_trace1, te_abundance_control_11_trace2]
+    te_abundance_treated_11_data = [te_abundance_treated_11_trace1, te_abundance_treated_11_trace2]
+    te_abundance_control_20_data = [te_abundance_control_20_trace1, te_abundance_control_20_trace2]
+    te_abundance_treated_20_data = [te_abundance_treated_20_trace1, te_abundance_treated_20_trace2]
 
     te_abundance_control_11_layout = dict(title="11 TE VS Abundance (TD) Control Two-Sided Mann Whitney U: {}, P-value:"
                                                 " {}".format(rho_11_control_te_abundance,
@@ -455,42 +540,6 @@ if __name__ == "__main__":
                                   )
 
     # Histograms
-    human_11_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample 11 from {} human transcripts"
-                                         "".format(len(expression_vectors['human_11_TE_FC'])),
-                                   yaxis=dict(zeroline=False),
-                                   xaxis=dict(zeroline=False)
-                                   )
-
-    human_20_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample 20 from {} human transcripts"
-                                         "".format(len(expression_vectors['human_20_TE_FC'])),
-                                   yaxis=dict(zeroline=False),
-                                   xaxis=dict(zeroline=False)
-                                   )
-
-    human_Avg_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample Average from {} human "
-                                          "transcripts".format(len(expression_vectors['human_Avg_TE_FC'])),
-                                    yaxis=dict(zeroline=False),
-                                    xaxis=dict(zeroline=False)
-                                    )
-
-    kshv_11_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample 11 from {} KSHV transcripts"
-                                        "".format(len(expression_vectors['kshv_11_TE_FC'])),
-                                  yaxis=dict(zeroline=False),
-                                  xaxis=dict(zeroline=False)
-                                  )
-
-    kshv_20_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample 20 from {} KSHV transcripts"
-                                        "".format(len(expression_vectors['kshv_20_TE_FC'])),
-                                  yaxis=dict(zeroline=False),
-                                  xaxis=dict(zeroline=False)
-                                  )
-
-    kshv_Avg_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample Average from {} KSHV transcripts"
-                                         "".format(len(expression_vectors['kshv_Avg_TE_FC'])),
-                                   yaxis=dict(zeroline=False),
-                                   xaxis=dict(zeroline=False)
-                                   )
-
     comb_11_TE_hist_layout = dict(title="Frequency of TE Fold Change Values in Sample 11 from {} KSHV and Human "
                                         "transcripts".format(len(expression_vectors['11_TE_FC'])),
                                   yaxis=dict(zeroline=False),
@@ -580,24 +629,6 @@ if __name__ == "__main__":
 
     fc_fig_20 = dict(data=fc_abundance_20_data, layout=fc_abundance_20_layout)
     plotly.offline.plot(fc_fig_20, filename="{}_20_TE_FC_Abundance_Correlation".format(args.outroot))
-
-    human_te_hist_fig_11 = dict(data=human_11_TE_hist_data, layout=human_11_TE_hist_layout)
-    plotly.offline.plot(human_te_hist_fig_11, filename="{}_human_11_TE_hist".format(args.outroot))
-
-    human_te_hist_fig_20 = dict(data=human_20_TE_hist_data, layout=human_20_TE_hist_layout)
-    plotly.offline.plot(human_te_hist_fig_20, filename="{}_human_20_TE_hist".format(args.outroot))
-
-    human_te_hist_fig_Avg = dict(data=human_Avg_TE_hist_data, layout=human_Avg_TE_hist_layout)
-    plotly.offline.plot(human_te_hist_fig_Avg, filename="{}_human_Avg_TE_hist".format(args.outroot))
-
-    kshv_te_hist_fig_11 = dict(data=kshv_11_TE_hist_data, layout=kshv_11_TE_hist_layout)
-    plotly.offline.plot(kshv_te_hist_fig_11, filename="{}_kshv_11_TE_hist".format(args.outroot))
-
-    kshv_te_hist_fig_20 = dict(data=kshv_20_TE_hist_data, layout=kshv_20_TE_hist_layout)
-    plotly.offline.plot(kshv_te_hist_fig_20, filename="{}_kshv_20_TE_hist".format(args.outroot))
-
-    kshv_te_hist_fig_Avg = dict(data=kshv_Avg_TE_hist_data, layout=kshv_Avg_TE_hist_layout)
-    plotly.offline.plot(kshv_te_hist_fig_Avg, filename="{}_kshv_Avg_TE_hist".format(args.outroot))
 
     comb_te_hist_fig_11 = dict(data=comb_11_TE_hist_data, layout=comb_11_TE_hist_layout)
     plotly.offline.plot(comb_te_hist_fig_11, filename="{}_comb_11_TE_hist".format(args.outroot))
